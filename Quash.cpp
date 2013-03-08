@@ -35,6 +35,10 @@ void startMainLoop() {
 	mainLoop();
 }
 
+int executeCommands(int argc, char **argv) {
+	
+}
+
 void execute(const char **argv) {
 	
 	if(!args) {

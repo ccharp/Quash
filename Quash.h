@@ -16,8 +16,8 @@ struct Process {
 	pid_t pid;	
 	char **argv
 
-	//input file
-	//output file
+	FILE *inputFile;
+	FILE *outputFile;
 }
 
 struct Job {
@@ -66,6 +66,8 @@ class Quash {
 		); 
 		
 		void startMainLoop();
+		
+		int executeCommands(int argc, char **argv); 
 };
 	
 
