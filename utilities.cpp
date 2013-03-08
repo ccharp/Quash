@@ -29,9 +29,9 @@ string cleanSpecialChars(const string str) {
 vector<string> tokenize(const string str, const char delimeter) {
 
 	vector<string> words;
-	stringstream ss(str);
 
-	string newStr = cleanSpecialChars(str);
+	string cleanedStr = cleanSpecialChars(str);
+	stringstream ss(cleanedStr);
 
 	string word;
 	while(ss) {
@@ -40,6 +40,20 @@ vector<string> tokenize(const string str, const char delimeter) {
 	}
 
 	return words;
+}
+
+// Converts tokens in a C style argument array, argv. 
+char **argify(const vector<string> tokens, char **args) {
+	int argc = tokens.size(); 
+	args = new char*[argc + 1];
+
+	for(unsigned int i = 0; i < argc; i++) {
+		args[i] = new char[tokens[i].length() + 1];
+		strcpy(args[i], words[i].c_str());
+		args[i][words[i].length()] = '\0';	
+	}
+
+	return args;
 }
 
 

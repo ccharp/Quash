@@ -12,6 +12,7 @@
 
 #include "Job.h"
 #include "Quash.h"
+#include "utilities.h"
 
 using namespace std;
 
@@ -23,28 +24,57 @@ void Quash::mainLoop() {
 		string input;
 		getline(cin, input);
 
-		// Tokenize input on spaces 
-		char **args = NULL;
-		tokenize(input, args); 
 
-		if(!args) {
-			cout << "Error in mainLoop\n";
-			continue; 
-		}
+		
 
-		// Determine if the command is a binary to be executed 
-		// or a shell command
-		if(isShellcommand(args)) {
-			
-		} else {
-			Job job = parseJob(input);	
-			job.execute(); 	
-		}	
+		execute(args);
 	}
 }
 
+void startMainLoop() {
+	mainLoop();
+}
+
+void execute(const char **argv) {
+	
+	if(!args) {
+		cout << "Error in mainLoop\n";
+		continue; 
+	}
+
+	// No piping or complex jobs yet, so no need for parsing. 	
+
+	QuashCmds quashCmd;
+	if((quashCmd = isShellcommand(args)) != NOT_QUASH_CMD) {
+		executeQuashCommand(quashCmd, args);	
+	} else {
+		Job job = parseJob(args);	
+		executeJob(job); 	
+	}
+}
+
+void Quash::executeQuashCommand(QuashCmds quashCmd, char **args) {
+	switch(quashCmd) {
+		case: CD
+			executeCd(args);
+		case: SET
+			executeSet(args);
+		case: EXIT
+		case: QUIT
+			executeExit(args); 
+		case: JOBS
+			executeJobs(args); 
+		default:
+			cerr << "Problem in executeQuashCommand\n";
+			
+}
+
+// Parses a potentially complex (thanks to pipes and redirects) into a Job, a set
+// of connected processes
 Job Quash::parseJob(const string input) {
-		
+		char **args = NULL;
+		argify(tokenize(input, ' '), args); 
+
 }
 
 void Quash::printPrompt() {
