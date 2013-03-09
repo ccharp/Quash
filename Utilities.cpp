@@ -60,14 +60,9 @@ char **argify(const vector<string> tokens, char **args) {
 	int argc = tokens.size(); 
 	args = new char*[argc + 1];
 
-	cout << "In ARGIFY: \n    ";
-
 	for(unsigned int i = 0; i < argc; i++) {
 		args[i] = new char[tokens[i].length() + 1];
 		strcpy(args[i], tokens[i].c_str());
-		//args[i][tokens[i].length()] = '\0';	
-		
-		cout << " " << args[i];
 	}
 
 	args[argc] = NULL;

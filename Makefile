@@ -9,4 +9,4 @@ Utilities.o: Utilities.h Utilities.cpp
 
 	
 clean: 
-		rm *.o *.ghc *.swp *~
+		rm *.o *.gch *.swp *~

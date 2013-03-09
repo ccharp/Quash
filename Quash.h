@@ -10,7 +10,7 @@
 
 #include "Utilities.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 using namespace std;
 
@@ -30,30 +30,33 @@ struct Process {
 	void print() {
 		cout << "  Print Process: \n";
 		cout << "  pid = " << pid << endl;
-		cout << "  argv = \n";
+		cout << "  argv =";
 
-		for(unsigned int i = 0; argv[i]; i++) {
-			cout << "    " << argv[i] << endl;	
+		for(unsigned int i = 0; argv[i] != NULL; i++) {
+			cout << " " << argv[i];	
 		}
 	}
 
-	/*~Process() {
-		fclose(inputFile);
-		fclose(outputFile);
+	~Process() {
+		if(STDIN_FILENO != fileno(inputFile)) {
+			fclose(inputFile);
+		}
+		if(STDOUT_FILENO != fileno(outputFile)) {
+			fclose(outputFile); 
+		}
 		
 		if(argv) {
-			print();
-			for(unsigned int i = 0; argv[i]; i++) {
+			for(unsigned int i = 0; argv[i] != NULL; i++) {
 				delete []argv[i];	
 			}	
 			
 			delete []argv;
 		}
-	}*/
+	}
 };
 
 struct Job {
-	vector<Process> processes;
+	vector<Process*> processes;
 	bool runInBackground; 
 
 	Job() {
@@ -64,8 +67,8 @@ struct Job {
 		cout << "Print Job: \n";
 		cout << " runInBackGround = " << runInBackground << endl;
 
-		for(Process p : processes) {
-			p.print();	
+		for(unsigned int i = 0; i < processes.size(); i++) {
+			processes[i]->print();	
 		}
 	}
 };
@@ -83,13 +86,13 @@ class Quash {
 	private: // Member Functions
 		void printPrompt();
 		
-		Process parseProcess(const string input);
+		Process *parseProcess(const string input);
 
-		Job parseJob(const string input); 
+		Job *parseJob(const string input); 
 
 		QuashCmds isShellCommand(const Process process);
 
-		void execute(Job job); 
+		void execute(const Job *job); 
 
 		void mainLoop();
 

@@ -26,7 +26,7 @@ void Quash::mainLoop() {
 		string input;
 		getline(cin, input);
 
-		Job job = parseJob(input);	
+		Job *job = parseJob(input);	
 
 		execute(job);
 	}
@@ -40,7 +40,7 @@ int Quash::executeCommands(int argc, char **argv) {
 	
 }
 
-void Quash::execute(Job job) {
+void Quash::execute(const Job *job) {
 	/*for (Process process : job.processes )
 	{
 	//	if(!argv) {
@@ -77,8 +77,8 @@ void Quash::executeQuashCommand(QuashCmds quashCmd, const Process process) {
 			
 }
 
-Process Quash::parseProcess(const string input) {
-	Process process;
+Process *Quash::parseProcess(const string input) {
+	Process *process = new Process();
 
 	vector<string> tokProcess = tokenize(input, ' ');
 	vector<string> tokArgs;
@@ -95,9 +95,9 @@ Process Quash::parseProcess(const string input) {
 			}
 			
 			const char *filename = tokProcess[++i].c_str();
-			process.inputFile = fopen(filename, "r"); 
+			process->inputFile = fopen(filename, "r"); 
 			
-			if(process.outputFile == NULL) {
+			if(process->outputFile == NULL) {
 				cerr << "Couldn't open file: " << filename << endl;	
 			}
 		} 
@@ -109,9 +109,9 @@ Process Quash::parseProcess(const string input) {
 			}
 			
 			const char *filename = tokProcess[++i].c_str();
-			process.outputFile = fopen(filename, "w"); 
+			process->outputFile = fopen(filename, "w"); 
 			
-			if(process.outputFile == NULL) {
+			if(process->outputFile == NULL) {
 				cerr << "Couldn't open file: " << filename << endl;	
 			}
 		} 
@@ -123,15 +123,15 @@ Process Quash::parseProcess(const string input) {
 	
 	// Returns pointer to C style argument array made from the 
 	// argument tokens
-	process.argv = argify(tokArgs, process.argv); 
+	process->argv = argify(tokArgs, process->argv); 
 
 	return process;
 }
 
 // Parses a potentially complex (thanks to pipes and redirects) into a Job, a set
 // of connected processes
-Job Quash::parseJob(const string input) {
-	Job job;
+Job *Quash::parseJob(const string input) {
+	Job *job = new Job();
 	
 	// Tokenize input into individual process
 	vector<string> tokProcesses = tokenize(input, '|');
@@ -142,19 +142,19 @@ Job Quash::parseJob(const string input) {
 	if((pos = lastStr.find("&")) != string::npos) {
 		
 		// Found a '&'
-		job.runInBackground = true; 
+		job->runInBackground = true; 
 		tokProcesses[tokProcesses.size() - 1].erase(pos);
 	}
 		
 	// Parse each process and add it to the job
 	for(string strProcess : tokProcesses) {
-		Process process = parseProcess(strProcess); 
+		Process *process = parseProcess(strProcess);
 
-		job.processes.push_back(process); 	
+		job->processes.push_back(process); 	
 	}
 
 #if DEBUG
-	job.print();
+	job->print();
 #endif
 		
 	return job;
