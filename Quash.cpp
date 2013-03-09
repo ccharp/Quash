@@ -10,12 +10,14 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#include "Job.h"
 #include "Quash.h"
-#include "utilities.h"
+#include "Utilities.h"
 
 using namespace std;
 
+Quash::Quash(char **&aEnv) {
+	mEnv = aEnv;	
+}
 
 void Quash::mainLoop() {
 	while(1) {
@@ -25,51 +27,54 @@ void Quash::mainLoop() {
 		getline(cin, input);
 
 
-		
+		Job job = parseJob(input);	
 
-		execute(args);
+		execute(job);
 	}
 }
 
-void startMainLoop() {
+void Quash::startMainLoop() {
 	mainLoop();
 }
 
-int executeCommands(int argc, char **argv) {
+int Quash::executeCommands(int argc, char **argv) {
 	
 }
 
-void execute(const char **argv) {
-	
-	if(!args) {
-		cout << "Error in mainLoop\n";
-		continue; 
-	}
+void Quash::execute(Job job) {
+	/*for (Process process : job.processes )
+	{
+	//	if(!argv) {
+	//		cout << "Error in mainLoop\n";
+	//		continue; 
+	//	}
 
-	// No piping or complex jobs yet, so no need for parsing. 	
+		// No piping or complex jobs yet, so no need for parsing. 	
 
-	QuashCmds quashCmd;
-	if((quashCmd = isShellcommand(args)) != NOT_QUASH_CMD) {
-		executeQuashCommand(quashCmd, args);	
-	} else {
-		Job job = parseJob(args);	
-		executeJob(job); 	
-	}
+		QuashCmds quashCmd;
+		if((quashCmd = isShellcommand(argv)) != NOT_QUASH_CMD) {
+			executeQuashCommand(quashCmd, argv);	
+		} else {
+			Job job = parseJob(argv);	
+			executeJob(job); 	
+		}
+	}*/
 }
 
-void Quash::executeQuashCommand(QuashCmds quashCmd, char **args) {
+void Quash::executeQuashCommand(QuashCmds quashCmd, const Process process) {
 	switch(quashCmd) {
-		case: CD
-			executeCd(args);
-		case: SET
-			executeSet(args);
-		case: EXIT
-		case: QUIT
-			executeExit(args); 
-		case: JOBS
-			executeJobs(args); 
+		case CD:
+			executeCd(process);
+		case SET:
+			executeSet(process);
+		case EXIT:
+		case QUIT:
+			executeExit(process); 
+		case JOBS:
+			executeJobs(process); 
 		default:
 			cerr << "Problem in executeQuashCommand\n";
+	}
 			
 }
 
@@ -79,6 +84,8 @@ Job Quash::parseJob(const string input) {
 		char **args = NULL;
 		argify(tokenize(input, ' '), args); 
 
+		Job job;
+		return job;
 }
 
 void Quash::printPrompt() {
@@ -87,21 +94,37 @@ void Quash::printPrompt() {
 	delete []cwd;
 }
 
-QuashCmds Quash::isShellCommand(const char const **args) {
-	bool retVal = NOT_QUASH_CMD;
+QuashCmds Quash::isShellCommand(const Process process) {
+	QuashCmds retVal = NOT_QUASH_CMD;
 
-	if("cd" == args[0])
+	if("cd" == process.argv[0])
 		retVal = CD;
-	else if("set" == args[0])
+	else if("set" == process.argv[0])
 		retVal = SET;
-	else if("exit" == args[0])
+	else if("exit" == process.argv[0])
 		retVal = EXIT;
-	else if("quit" == args[0])
+	else if("quit" == process.argv[0])
 		retVal = QUIT;
-	else if("jobs" == args[0])
+	else if("jobs" == process.argv[0])
 		retVal = JOBS;
 	
 	return retVal;	
+}
+
+void Quash::executeCd(Process process) {
+
+}
+
+void Quash::executeSet(Process process) {
+
+}
+
+void Quash::executeExit(Process process) {
+
+}
+
+void Quash::executeJobs(Process process) {
+
 }
 
 

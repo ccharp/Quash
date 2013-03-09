@@ -8,23 +8,23 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#include "utilities.h"
+#include "Utilities.h"
 
 using namespace std;
 
 struct Process { 
 	pid_t pid;	
-	char **argv
+	char **argv;
 
 	FILE *inputFile;
 	FILE *outputFile;
-}
+};
 
 struct Job {
 	vector<Process> processes;
 	unsigned int numPipes;	
 	bool runInBackground; 
-}
+};
 
 enum QuashCmds {
 	NOT_QUASH_CMD = 0,
@@ -39,30 +39,30 @@ class Quash {
 	private: // Member Functions
 		void printPrompt();
 
-		Job parseJob(string input); 
+		Job parseJob(const string input); 
 
-		QuashCmds isShellCommand(string input);
+		QuashCmds isShellCommand(const Process process);
 
-		void execute(const char **argsv); 
+		void execute(Job job); 
 
 		void mainLoop();
 
-		void executeQuashCommand(QuashCmds quashCmd, char **args); 
+		void executeQuashCommand(QuashCmds quashCmd, const Process process); 
 
-		void executeCd(char **args);
-		void executeSet(char **args);
-		void executeExit(char **args);
-		void executeJobs(char **args);
+		void executeCd(Process process);
+		void executeSet(Process process);
+		void executeExit(Process process);
+		void executeJobs(Process Process);
 
 	private: // Member Variables
 
 		// Some data structure to track jobs
 
-		char **env;
+		char **mEnv;
 
 	public:
 		Quash(
-			char **aEnv,
+			char **&aEnv
 		); 
 		
 		void startMainLoop();
