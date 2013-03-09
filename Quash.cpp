@@ -26,7 +26,6 @@ void Quash::mainLoop() {
 		string input;
 		getline(cin, input);
 
-
 		Job job = parseJob(input);	
 
 		execute(job);
@@ -78,20 +77,72 @@ void Quash::executeQuashCommand(QuashCmds quashCmd, const Process process) {
 			
 }
 
+Process Quash::parseProcess(const string input) {
+	Process process;
+
+	vector<string> tokProcess = tokenize(input, ' ');
+	vector<string> tokArgs;
+
+	unsigned int len = tokProcess.size();
+	for(int i = 0; i < len; i++) {
+		if(tokProcess[i] == "<") {
+			
+			if(i + 1 >= len) {
+				cerr << "Bad syntax: '<'\n";
+				break;
+			}
+			
+			char *filename = tokProcess[++i].c_str();
+			process.inputFile = fopen(filename, "r"); 
+		} 
+		else if(tokProcess[i] == ">") {
+		
+			if(i + 1 >= len) {
+				cerr << "Bad syntax: '>'\n";
+				break;
+			}
+			
+			char *filename = tokProcess[++i].c_str();
+			process.inputFile = fopen(filename, "w"); 
+		} else {
+			tokArgs.push_back(tokProcess[i]);
+		}
+	}
+	
+	argify(tokArgs, process.argv); 
+
+	return process;
+}
+
 // Parses a potentially complex (thanks to pipes and redirects) into a Job, a set
 // of connected processes
 Job Quash::parseJob(const string input) {
-		char **args = NULL;
-		argify(tokenize(input, ' '), args); 
+	Job job;
+	
+	// Tokenize input into individual process
+	vector<string> tokProcesses = tokenize(input, '|');
 
-		Job job;
+	// Check for "&"
+	int pos;
+	string lastStr = tokProcess[tokProcess.size() - 1];
+	if((pos = lastStr.find("&")) != string::npos) {
+		job.runInBackground = true; 
+		takProcess[tokProcess.size() - 1].erase(pos);
+	}
 		
-		return job;
+	for(string strProcess : tokProcesses) {
+		Process process = parseProces(strProcess); 
+
+		job.processes.push_back(process); 	
+	}
+		
+	return job;
 }
 
 void Quash::printPrompt() {
 	char *cwd = get_current_dir_name(); 
 	cout << "Quash " << cwd << "\n$ ";	
+
 	delete []cwd;
 }
 

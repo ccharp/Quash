@@ -18,12 +18,21 @@ struct Process {
 
 	FILE *inputFile;
 	FILE *outputFile;
+	
+	Process() {
+		pid = -1
+		inputFile = stdin;
+		outputFile = stdout;
+	}
 };
 
 struct Job {
 	vector<Process> processes;
-	unsigned int numPipes;	
 	bool runInBackground; 
+
+	Job() {
+		runInBackground = false;	
+	}
 };
 
 enum QuashCmds {
@@ -38,6 +47,8 @@ enum QuashCmds {
 class Quash {
 	private: // Member Functions
 		void printPrompt();
+		
+		Process parseProcess(const string input);
 
 		Job parseJob(const string input); 
 

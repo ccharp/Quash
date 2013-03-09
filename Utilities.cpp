@@ -36,8 +36,8 @@ vector<string> tokenize(const string str, const char delimeter) {
 	stringstream ss(cleanedStr);
 
 	string word;
-	while(ss) {
-		ss >> word; 
+	while(getline(ss, word, delimeter)) {
+		cout << "while loop: " << word << endl;
 		words.push_back(word);		
 	}
 
@@ -54,6 +54,8 @@ char **argify(const vector<string> tokens, char **args) {
 		strcpy(args[i], tokens[i].c_str());
 		args[i][tokens[i].length()] = '\0';	
 	}
+
+	args[argc] = NULL;
 
 	return args;
 }
