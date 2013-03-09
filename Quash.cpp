@@ -17,19 +17,29 @@ using namespace std;
 
 Quash::Quash(char **&aEnv) {
 	mEnv = aEnv;	
+
+	currDir= (string)get_current_dir_name();
 }
 
 void Quash::mainLoop() {
-	while(1) {
-		printPrompt();
+	string input;
+	bool hasInfile = !isatty(STDIN_FILENO);
 
-		string input;
-		getline(cin, input);
-
-		Job *job = parseJob(input);	
-
-		execute(job);
-	}
+	do{
+		// If commands were passed in
+	   	// execute them then terminate, and do not print prompt
+		if(!hasInfile) {
+	        printPrompt();
+	    }
+			
+		if(getline(cin, input)){
+	   		Job *job = parseJob(input);	
+			execute(job);
+	    } 
+		else if (hasInfile) {
+	    	break;
+	  	}
+	}while(1);
 }
 
 void Quash::startMainLoop() {

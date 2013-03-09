@@ -109,6 +109,8 @@ class Quash {
 		// Some data structure to track jobs
 
 		char **mEnv;
+		
+		string currDir;
 
 	public:
 		Quash(

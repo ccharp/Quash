@@ -12,14 +12,7 @@ using namespace std;
 
 int main(int argc, char **argv, char **envp) {
 	Quash quash = Quash(envp);
-	
-	// If commands were passed in, execute them then terminate. 
-	if(0) { // Don't know how to check to input from stdin without pausing. 
-		quash.executeCommands(argc, argv); 	
-	} else {
-		quash.startMainLoop(); 
-	}
-	
+  quash.startMainLoop(); 
 	return EXIT_SUCCESS;
 }
 
