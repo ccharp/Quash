@@ -10,6 +10,8 @@
 
 #include "Utilities.h"
 
+#define DEBUG 1
+
 using namespace std;
 
 struct Process { 
@@ -24,6 +26,30 @@ struct Process {
 		inputFile = stdin;
 		outputFile = stdout;
 	}
+
+	void print() {
+		cout << "  Print Process: \n";
+		cout << "  pid = " << pid << endl;
+		cout << "  argv = \n";
+
+		for(unsigned int i = 0; argv[i]; i++) {
+			cout << "    " << argv[i] << endl;	
+		}
+	}
+
+	/*~Process() {
+		fclose(inputFile);
+		fclose(outputFile);
+		
+		if(argv) {
+			print();
+			for(unsigned int i = 0; argv[i]; i++) {
+				delete []argv[i];	
+			}	
+			
+			delete []argv;
+		}
+	}*/
 };
 
 struct Job {
@@ -32,6 +58,15 @@ struct Job {
 
 	Job() {
 		runInBackground = false;	
+	}
+
+	void print() {
+		cout << "Print Job: \n";
+		cout << " runInBackGround = " << runInBackground << endl;
+
+		for(Process p : processes) {
+			p.print();	
+		}
 	}
 };
 
@@ -64,6 +99,7 @@ class Quash {
 		void executeSet(Process process);
 		void executeExit(Process process);
 		void executeJobs(Process Process);
+		
 
 	private: // Member Variables
 

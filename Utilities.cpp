@@ -37,22 +37,37 @@ vector<string> tokenize(const string str, const char delimeter) {
 
 	string word;
 	while(getline(ss, word, delimeter)) {
-		cout << "while loop: " << word << endl;
-		words.push_back(word);		
+		if(!word.empty()) {
+			words.push_back(word);		
+		}
 	}
 
 	return words;
 }
+
+void printStrVector(vector<string> words, string message) {
+	cout << "Printing Vector: " << message << endl;
+	for(string w : words) {
+		cout << " " << w ;	
+	}	
+
+	cout << endl;
+}
+
 
 // Converts tokens in a C style argument array, argv. 
 char **argify(const vector<string> tokens, char **args) {
 	int argc = tokens.size(); 
 	args = new char*[argc + 1];
 
+	cout << "In ARGIFY: \n    ";
+
 	for(unsigned int i = 0; i < argc; i++) {
 		args[i] = new char[tokens[i].length() + 1];
 		strcpy(args[i], tokens[i].c_str());
-		args[i][tokens[i].length()] = '\0';	
+		//args[i][tokens[i].length()] = '\0';	
+		
+		cout << " " << args[i];
 	}
 
 	args[argc] = NULL;
@@ -62,3 +77,22 @@ char **argify(const vector<string> tokens, char **args) {
 
 
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

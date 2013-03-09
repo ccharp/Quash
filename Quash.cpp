@@ -85,6 +85,8 @@ Process Quash::parseProcess(const string input) {
 
 	unsigned int len = tokProcess.size();
 	for(int i = 0; i < len; i++) {
+		
+		// Check for redirection
 		if(tokProcess[i] == "<") {
 			
 			if(i + 1 >= len) {
@@ -94,6 +96,10 @@ Process Quash::parseProcess(const string input) {
 			
 			const char *filename = tokProcess[++i].c_str();
 			process.inputFile = fopen(filename, "r"); 
+			
+			if(process.outputFile == NULL) {
+				cerr << "Couldn't open file: " << filename << endl;	
+			}
 		} 
 		else if(tokProcess[i] == ">") {
 		
@@ -102,14 +108,22 @@ Process Quash::parseProcess(const string input) {
 				break;
 			}
 			
-			char const *filename = tokProcess[++i].c_str();
-			process.inputFile = fopen(filename, "w"); 
-		} else {
+			const char *filename = tokProcess[++i].c_str();
+			process.outputFile = fopen(filename, "w"); 
+			
+			if(process.outputFile == NULL) {
+				cerr << "Couldn't open file: " << filename << endl;	
+			}
+		} 
+		// No redirection
+		else {
 			tokArgs.push_back(tokProcess[i]);
 		}
 	}
 	
-	argify(tokArgs, process.argv); 
+	// Returns pointer to C style argument array made from the 
+	// argument tokens
+	process.argv = argify(tokArgs, process.argv); 
 
 	return process;
 }
@@ -122,19 +136,26 @@ Job Quash::parseJob(const string input) {
 	// Tokenize input into individual process
 	vector<string> tokProcesses = tokenize(input, '|');
 
-	// Check for "&"
+	// Check for '&' in the last process
 	int pos;
 	string lastStr = tokProcesses[tokProcesses.size() - 1];
 	if((pos = lastStr.find("&")) != string::npos) {
+		
+		// Found a '&'
 		job.runInBackground = true; 
 		tokProcesses[tokProcesses.size() - 1].erase(pos);
 	}
 		
+	// Parse each process and add it to the job
 	for(string strProcess : tokProcesses) {
 		Process process = parseProcess(strProcess); 
 
 		job.processes.push_back(process); 	
 	}
+
+#if DEBUG
+	job.print();
+#endif
 		
 	return job;
 }
@@ -178,35 +199,6 @@ void Quash::executeExit(Process process) {
 void Quash::executeJobs(Process process) {
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

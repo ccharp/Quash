@@ -10,6 +10,8 @@ string cleanSpecialChars(const string str);
 
 vector<string> tokenize(const string str, const char delimeter);
 
+void printStrVector(vector<string> words, string message);
+
 char **argify(const vector<string> tokens, char **args); 
 
 #endif
