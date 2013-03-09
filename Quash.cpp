@@ -85,6 +85,7 @@ Job Quash::parseJob(const string input) {
 		argify(tokenize(input, ' '), args); 
 
 		Job job;
+		
 		return job;
 }
 

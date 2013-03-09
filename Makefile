@@ -8,4 +8,5 @@ Utilities.o: Utilities.h Utilities.cpp
 	g++ -std=c++0x -c -g Utilities.h Utilities.cpp 
 
 	
-clean: rm *.o
+clean: 
+		rm *.o *.ghc *.swp *~
