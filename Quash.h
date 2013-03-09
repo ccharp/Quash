@@ -20,7 +20,7 @@ struct Process {
 	FILE *outputFile;
 	
 	Process() {
-		pid = -1
+		pid = -1;
 		inputFile = stdin;
 		outputFile = stdout;
 	}

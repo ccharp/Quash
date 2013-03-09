@@ -92,7 +92,7 @@ Process Quash::parseProcess(const string input) {
 				break;
 			}
 			
-			char *filename = tokProcess[++i].c_str();
+			const char *filename = tokProcess[++i].c_str();
 			process.inputFile = fopen(filename, "r"); 
 		} 
 		else if(tokProcess[i] == ">") {
@@ -102,7 +102,7 @@ Process Quash::parseProcess(const string input) {
 				break;
 			}
 			
-			char *filename = tokProcess[++i].c_str();
+			char const *filename = tokProcess[++i].c_str();
 			process.inputFile = fopen(filename, "w"); 
 		} else {
 			tokArgs.push_back(tokProcess[i]);
@@ -124,14 +124,14 @@ Job Quash::parseJob(const string input) {
 
 	// Check for "&"
 	int pos;
-	string lastStr = tokProcess[tokProcess.size() - 1];
+	string lastStr = tokProcesses[tokProcesses.size() - 1];
 	if((pos = lastStr.find("&")) != string::npos) {
 		job.runInBackground = true; 
-		takProcess[tokProcess.size() - 1].erase(pos);
+		tokProcesses[tokProcesses.size() - 1].erase(pos);
 	}
 		
 	for(string strProcess : tokProcesses) {
-		Process process = parseProces(strProcess); 
+		Process process = parseProcess(strProcess); 
 
 		job.processes.push_back(process); 	
 	}
