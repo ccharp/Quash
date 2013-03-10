@@ -160,15 +160,9 @@ void Quash::executeQuashCommand(
 	switch(quashCmd) {
 		case CD:
 			executeCd(process);
-<<<<<<< HEAD
             break;
-=======
-			break;
->>>>>>> ec4294a8d8f4419222c6a628784697750987f1b7
 		case SET:
-            cout << "beginning set" << endl;
 			executeSet(process);
-<<<<<<< HEAD
             break;
 		case EXIT:
 		case QUIT:
@@ -177,16 +171,6 @@ void Quash::executeQuashCommand(
 		case JOBS:
 			executeJobs(process);
             break;
-=======
-			break;
-		case EXIT:
-		case QUIT:
-			executeExit(process); 
-			break;
-		case JOBS:
-			executeJobs(process); 
-			break;
->>>>>>> ec4294a8d8f4419222c6a628784697750987f1b7
 		default:
 			cerr << "Problem in executeQuashCommand\n";
 	}
@@ -349,14 +333,8 @@ QuashCmds Quash::isQuashCommand(const Process * const process) {
 }
 
 void Quash::executeCd(const Process * const process) {
-<<<<<<< HEAD
     string dir;
     if(process->argv[1] == NULL){
-=======
-	string dir;
-
-    if( process->argv[1] == NULL || process->argv[1] == "HOME" ){
->>>>>>> ec4294a8d8f4419222c6a628784697750987f1b7
         dir = getenv("HOME");
     } else {
         dir = process->argv[1];
