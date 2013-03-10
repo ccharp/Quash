@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <map>
 #include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -23,6 +24,7 @@ struct Process {
 	
 	Process() {
 		pid = -1;
+		argv = NULL;
 		inputFile = stdin;
 		outputFile = stdout;
 	}
@@ -56,21 +58,14 @@ struct Process {
 	}
 };
 
-struct Job {
-	vector<Process*> processes;
-	bool runInBackground; 
+struct JobIdentifier {
+	pid_t pid;
+	unsigned int jobid;
+	string jobTextString;
 
-	Job() {
-		runInBackground = false;	
-	}
-
-	void print() {
-		cout << "Print Job: \n";
-		cout << " runInBackGround = " << runInBackground << endl;
-
-		for(unsigned int i = 0; i < processes.size(); i++) {
-			processes[i]->print();	
-		}
+	JobIdentifier() {
+		pid = -1; 
+		jobid = -1;
 	}
 };
 
@@ -81,6 +76,37 @@ enum QuashCmds {
 	EXIT,
 	QUIT,
 	JOBS
+};
+
+
+struct Job {
+	vector<Process*> processes;
+	bool runInBackground; 
+	JobIdentifier jobID;
+
+	Job() {
+		runInBackground = false;	
+	}
+
+	Job(int aJobIdTracker) {
+		jobID.jobid = aJobIdTracker;
+		runInBackground = false;
+	}
+
+	void print() {
+		cout << "Print Job: \n";
+		cout << " runInBackGround = " << runInBackground << endl;
+
+		for(unsigned int i = 0; i < processes.size(); i++) {
+			processes[i]->print();	
+		}
+	}
+
+	~Job() {
+		for(Process *p : processes) {
+			delete p;	
+		}	
+	}
 };
 
 enum Forked {
@@ -100,7 +126,7 @@ class Quash {
 
 		QuashCmds isQuashCommand(const Process * const process);
 
-		void execute(
+		void executeJob(
 			const Job * const job
 		); 
 
@@ -109,8 +135,9 @@ class Quash {
 			const Process * const process
 		);
 		
-		int executeBinary(
-			Process * const process
+		int executeProcess(
+			Process * const process,
+			bool runInBackground
 		);
 
 		void executeCd(
@@ -129,23 +156,20 @@ class Quash {
 			const Process * const process
 		);
 		
+		void redirectFiles(FILE *input, FILE *output);
+		
 		bool fileExists(const char *path);
 				
 		bool findPath(char *&execPath);		
 		
-		void initSignals();
-		
 		static void signalHandler(int signal);
 		
-
 	private: // Member Variables
 
-		// Some data structure to track jobs
-
 		char **mEnv;
-		
+		unsigned int mJobid;
 		string currDir;
-
+		
 	public:
 		Quash(
 			char **&aEnv
