@@ -61,24 +61,35 @@ void Quash::execute(const Job *job) {
 
 		QuashCmds quashCmd;
 		if((quashCmd = isQuashCommand(process)) != NOT_QUASH_CMD) {
+			
 			executeQuashCommand(quashCmd, process);	
+			
 		} else { 
-			char *execPath = process->argv[0];
+			bool binExists = false;
 			
 			// if it's an absolute path
-			if('/' == execPath[0]) {
-					
+			if('/' == process->argv[0][0]) {
+				binExists = fileExists(process->argv[0]);		
 			} 
 			// if it's a local/relative path 
-			else if(strncmp("./", execPath, 2)) {
-			
+			else if(strncmp("./", process->argv[0], 2) == 0) {
+				// Trim the "./" off of the process->argv[0]
+				char *execPath = process->argv[0];
+				memmove(execPath, execPath + 2, strlen(execPath) - 1);
+				
+				binExists = fileExists(execPath);
 			}
 			// if we need to look though PATH
 			else {
-				// Find the absolute path and update p.argv[0]						
+				// if the binary exists, it will be set to process->argv[0];
+				binExists = findPath(process->argv[0]);	
 			}	
 			
-			executeBinary(process);
+			if(binExists) {
+				executeBinary(process);
+			} else {
+				cerr << "Quash: " << process->argv[0] << ": command not found...\n";
+			}
 			
 			if(job->runInBackground) {
 				// Put in in background somehow				
@@ -90,6 +101,40 @@ void Quash::execute(const Job *job) {
 			}
 		}
 	}
+}
+
+// Searches through PATH, looking for the process->argv[0]
+bool Quash::findPath(char *&execPath) {
+	// Ex: PATH=/usr/bin:/some/other
+	string PATH = string(getenv("PATH"));
+
+	vector<string> pathToks = tokenize(PATH.substr(5), ':'); 
+
+	for(string path : pathToks) {
+		path += "/" + string(execPath); 
+		
+		if(fileExists(path.c_str())) {
+			char *foundPath = new char[path.length() + 1];
+			strcpy(foundPath, path.c_str());
+			
+			delete []execPath;
+			execPath = foundPath;
+			
+			return foundPath;
+		}
+	}
+
+	return NULL;
+}
+
+bool Quash::fileExists(const char *path) {
+	FILE *f;
+	if(f = fopen(path, "r")) {
+		fclose(f);
+		return true;
+	}
+
+	return false;
 }
 
 void Quash::executeQuashCommand(
@@ -222,16 +267,21 @@ void Quash::printPrompt() {
 QuashCmds Quash::isQuashCommand(const Process * const process) {
 	QuashCmds retVal = NOT_QUASH_CMD;
 
-	if("cd" == process->argv[0])
+	if(strcmp("cd", process->argv[0]) == 0) {
 		retVal = CD;
-	else if("set" == process->argv[0])
+	}
+	else if(strcmp("set", process->argv[0]) == 0) {
 		retVal = SET;
-	else if("exit" == process->argv[0])
+	}
+	else if(strcmp("exit", process->argv[0]) == 0) {
 		retVal = EXIT;
-	else if("quit" == process->argv[0])
+	}
+	else if(strcmp("quit", process->argv[0]) == 0) {
 		retVal = QUIT;
-	else if("jobs" == process->argv[0])
+	}
+	else if(strcmp("jobs", process->argv[0]) == 0) {
 		retVal = JOBS;
+	}
 	
 	return retVal;	
 }
@@ -248,7 +298,9 @@ void Quash::executeCd(const Process * const process) {
 }
 
 void Quash::executeSet(const Process *  const process) {
-	setenv(process->argv[1], process->argv[3], 1);
+	vector<string> strToks = tokenize(string(process->argv[1]), '=');
+		
+	setenv(strToks[0].c_str(), strToks[1].c_str(), 1);
 }
 
 void Quash::executeExit(const Process * const process) {
@@ -278,16 +330,6 @@ void Quash::initSignals() {
 		exit(0);
 	}
 }
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -129,6 +129,10 @@ class Quash {
 			const Process * const process
 		);
 		
+		bool fileExists(const char *path);
+				
+		bool findPath(char *&execPath);		
+		
 		void initSignals();
 		
 		static void signalHandler(int signal);
