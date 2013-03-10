@@ -11,8 +11,9 @@
 using namespace std;
 
 int main(int argc, char **argv, char **envp) {
-	Quash quash = Quash(envp);
-  quash.startMainLoop(); 
+//   cout << "PATH = " << getenv("PATH") << endl;
+   Quash quash = Quash(envp);
+    quash.startMainLoop(); 
 	return EXIT_SUCCESS;
 }
 

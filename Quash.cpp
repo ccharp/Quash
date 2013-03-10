@@ -31,7 +31,7 @@ void Quash::mainLoop() {
 	do{
 		// If commands were passed in
 	   	// execute them then terminate, and do not print prompt
-		if(!hasInfile) {
+		if(!hasInfile){
 	        printPrompt();
 	    }
 			
@@ -42,7 +42,7 @@ void Quash::mainLoop() {
 	   		Job *job = parseJob(input);	
 			execute(job);
 	    } 
-		else if (hasInfile) {
+		else if(hasInfile){
 	    	break;
 	  	}
 	}while(1);
@@ -123,7 +123,6 @@ bool Quash::findPath(char *&execPath) {
 			return foundPath;
 		}
 	}
-
 	return NULL;
 }
 
@@ -145,13 +144,18 @@ void Quash::executeQuashCommand(
 	switch(quashCmd) {
 		case CD:
 			executeCd(process);
+            break;
 		case SET:
+            cout << "beginning set" << endl;
 			executeSet(process);
+            break;
 		case EXIT:
 		case QUIT:
-			executeExit(process); 
+			executeExit(process);
+            break;
 		case JOBS:
-			executeJobs(process); 
+			executeJobs(process);
+            break;
 		default:
 			cerr << "Problem in executeQuashCommand\n";
 	}
@@ -194,7 +198,7 @@ Process *Quash::parseProcess(const string input) {
 			const char *filename = tokProcess[++i].c_str();
 			process->inputFile = fopen(filename, "r"); 
 			
-			if(process->outputFile == NULL) {
+			if(process->inputFile == NULL) {
 				cerr << "Couldn't open file: " << filename << endl;	
 			}
 		} 
@@ -287,20 +291,21 @@ QuashCmds Quash::isQuashCommand(const Process * const process) {
 }
 
 void Quash::executeCd(const Process * const process) {
-	 string dir;
-    if( process->argv[1] == NULL || process->argv[1] == "HOME" ){
+    string dir;
+    if(process->argv[1] == NULL){
         dir = getenv("HOME");
     } else {
         dir = process->argv[1];
     }
     currDir = dir;
-    chdir(dir.c_str());
+    chdir(currDir.c_str());
 }
 
 void Quash::executeSet(const Process *  const process) {
-	vector<string> strToks = tokenize(string(process->argv[1]), '=');
-		
-	setenv(strToks[0].c_str(), strToks[1].c_str(), 1);
+    if(process->argv[1]){
+        vector<string> strToks = tokenize(string(process->argv[1]), '=');
+        setenv(strToks[0].c_str(), strToks[1].c_str(), 1);
+    }
 }
 
 void Quash::executeExit(const Process * const process) {
