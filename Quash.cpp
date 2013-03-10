@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <string.h>
+#include <sys/wait.h>
 
 #include "Quash.h"
 #include "Utilities.h"
@@ -16,9 +18,10 @@
 using namespace std;
 
 Quash::Quash(char **&aEnv) {
-	mEnv = aEnv;	
-
+	mEnv = aEnv;
 	currDir= (string)get_current_dir_name();
+
+	initSignals();
 }
 
 void Quash::mainLoop() {
@@ -33,6 +36,9 @@ void Quash::mainLoop() {
 	    }
 			
 		if(getline(cin, input)){
+			if(input.empty())
+				continue;
+
 	   		Job *job = parseJob(input);	
 			execute(job);
 	    } 
@@ -46,31 +52,51 @@ void Quash::startMainLoop() {
 	mainLoop();
 }
 
-int Quash::executeCommands(int argc, char **argv) {
-	
-}
-
 void Quash::execute(const Job *job) {
-	/*for (Process process : job.processes )
-	{
-	//	if(!argv) {
-	//		cout << "Error in mainLoop\n";
-	//		continue; 
-	//	}
 
-		// No piping or complex jobs yet, so no need for parsing. 	
+	unsigned int numProcesses = job->processes.size();
+	for(unsigned int i = 0; i < numProcesses; i++) {
+
+		Process *process = job->processes[0];	
 
 		QuashCmds quashCmd;
-		if((quashCmd = isShellcommand(argv)) != NOT_QUASH_CMD) {
-			executeQuashCommand(quashCmd, argv);	
-		} else {
-			Job job = parseJob(argv);	
-			executeJob(job); 	
+		if((quashCmd = isQuashCommand(process)) != NOT_QUASH_CMD) {
+			executeQuashCommand(quashCmd, process);	
+		} else { 
+			char *execPath = process->argv[0];
+			
+			// if it's an absolute path
+			if('/' == execPath[0]) {
+					
+			} 
+			// if it's a local/relative path 
+			else if(strncmp("./", execPath, 2)) {
+			
+			}
+			// if we need to look though PATH
+			else {
+				// Find the absolute path and update p.argv[0]						
+			}	
+			
+			executeBinary(process);
+			
+			if(job->runInBackground) {
+				// Put in in background somehow				
+			} else { 
+				// Wait if it's the last proces
+				if(i == numProcesses - 1) {
+					wait(NULL);	
+				}
+			}
 		}
-	}*/
+	}
 }
 
-void Quash::executeQuashCommand(QuashCmds quashCmd, const Process process) {
+void Quash::executeQuashCommand(
+	QuashCmds quashCmd, 
+	const Process * const process
+	) 
+	{
 	switch(quashCmd) {
 		case CD:
 			executeCd(process);
@@ -84,7 +110,23 @@ void Quash::executeQuashCommand(QuashCmds quashCmd, const Process process) {
 		default:
 			cerr << "Problem in executeQuashCommand\n";
 	}
-			
+}
+
+int Quash::executeBinary(Process * const process) {
+	pid_t pid = fork();
+	switch(pid) {
+		case FAILURE:
+			cerr << "Problem forking\n";
+		case CHILD:
+			if(execve(process->argv[0], process->argv, mEnv) == -1) {
+				cerr << "PROBLEM EXECUTING: " << process->argv[0] << endl;
+				exit(0);	
+			}
+		default: // Parent
+			process->pid = pid;
+	}
+
+	return 1;
 }
 
 Process *Quash::parseProcess(const string input) {
@@ -177,37 +219,64 @@ void Quash::printPrompt() {
 	delete []cwd;
 }
 
-QuashCmds Quash::isShellCommand(const Process process) {
+QuashCmds Quash::isQuashCommand(const Process * const process) {
 	QuashCmds retVal = NOT_QUASH_CMD;
 
-	if("cd" == process.argv[0])
+	if("cd" == process->argv[0])
 		retVal = CD;
-	else if("set" == process.argv[0])
+	else if("set" == process->argv[0])
 		retVal = SET;
-	else if("exit" == process.argv[0])
+	else if("exit" == process->argv[0])
 		retVal = EXIT;
-	else if("quit" == process.argv[0])
+	else if("quit" == process->argv[0])
 		retVal = QUIT;
-	else if("jobs" == process.argv[0])
+	else if("jobs" == process->argv[0])
 		retVal = JOBS;
 	
 	return retVal;	
 }
 
-void Quash::executeCd(Process process) {
+void Quash::executeCd(const Process * const process) {
+	 string dir;
+    if( process->argv[1] == NULL || process->argv[1] == "HOME" ){
+        dir = getenv("HOME");
+    } else {
+        dir = process->argv[1];
+    }
+    currDir = dir;
+    chdir(dir.c_str());
+}
+
+void Quash::executeSet(const Process *  const process) {
+	setenv(process->argv[1], process->argv[3], 1);
+}
+
+void Quash::executeExit(const Process * const process) {
+	exit(EXIT_SUCCESS);
+}
+
+void Quash::executeJobs(const Process * const process) {
 
 }
 
-void Quash::executeSet(Process process) {
+/*static*/ void Quash::signalHandler(int signal) {
+	pid_t pid;
 
+	while((pid = waitpid(-1, NULL, WNOHANG)) > 0) {
+		// This job died. 	
+	}
 }
 
-void Quash::executeExit(Process process) {
+void Quash::initSignals() {
+	struct sigaction action; 
 
-}
+	memset(&action, 0, sizeof(action));
+	action.sa_handler = signalHandler;
 
-void Quash::executeJobs(Process process) {
-
+	if(sigaction(SIGCHLD, &action, 0)) {
+		cerr << "Error in initSignals\n";
+		exit(0);
+	}
 }
 
 

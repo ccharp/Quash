@@ -35,6 +35,7 @@ struct Process {
 		for(unsigned int i = 0; argv[i] != NULL; i++) {
 			cout << " " << argv[i];	
 		}
+		cout << endl;
 	}
 
 	~Process() {
@@ -82,26 +83,55 @@ enum QuashCmds {
 	JOBS
 };
 
+enum Forked {
+	FAILURE = -1,
+	CHILD = 0,
+};
+
 class Quash {
 	private: // Member Functions
 		void printPrompt();
 		
+		void mainLoop();
+
 		Process *parseProcess(const string input);
 
 		Job *parseJob(const string input); 
 
-		QuashCmds isShellCommand(const Process process);
+		QuashCmds isQuashCommand(const Process * const process);
 
-		void execute(const Job *job); 
+		void execute(
+			const Job * const job
+		); 
 
-		void mainLoop();
+		void executeQuashCommand(
+			QuashCmds quashCmd, 
+			const Process * const process
+		);
+		
+		int executeBinary(
+			Process * const process
+		);
 
-		void executeQuashCommand(QuashCmds quashCmd, const Process process); 
-
-		void executeCd(Process process);
-		void executeSet(Process process);
-		void executeExit(Process process);
-		void executeJobs(Process Process);
+		void executeCd(
+			const Process * const process
+		);
+		
+		void executeSet(
+			const Process * const process
+		);
+		
+		void executeExit(
+			const Process * const process
+		);
+		
+		void executeJobs(
+			const Process * const process
+		);
+		
+		void initSignals();
+		
+		static void signalHandler(int signal);
 		
 
 	private: // Member Variables
@@ -118,8 +148,6 @@ class Quash {
 		); 
 		
 		void startMainLoop();
-		
-		int executeCommands(int argc, char **argv); 
 };
 	
 
