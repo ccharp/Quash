@@ -41,17 +41,24 @@ Quash::Quash(char **&aEnv) {
 void Quash::mainLoop() {
 	string input;
 	bool hasInfile = !isatty(STDIN_FILENO);
+	bool promptPrinted = false;
 
 	do{
+		if(!cin.good()) {
+			cin.clear();
+			continue;	
+		}
 		// If commands were passed in
 	   	// execute them then terminate, and do not print prompt
-		if(!hasInfile) {
+		if(!hasInfile && !promptPrinted) {
 	        printPrompt();
+			promptPrinted = true;
 	    }
 			
-		if(getline(cin, input)){
+		if(getline(cin, input) && cin.good()) { 
 	   		Job *job;
 			
+			promptPrinted = false;
 			if(input.empty() || (job = parseJob(input)) == NULL) {
 				continue;	
 			}
@@ -61,6 +68,12 @@ void Quash::mainLoop() {
 		else if (hasInfile) {
 	    	break;
 	  	}
+#if DEBUG
+		else {
+			cout << "GETLINEFAILED!\n";
+			cout.flush();
+		}
+#endif
 	}while(1);
 }
 
@@ -70,16 +83,24 @@ void Quash::startMainLoop() {
 
 void Quash::executeJob(const Job *job) {
 
+	int prevPipe[2];
+	prevPipe[0] = STDIN_FILENO;
+	prevPipe[1] = STDOUT_FILENO;
+
 	unsigned int numProcesses = job->processes.size();
 	for(unsigned int i = 0; i < numProcesses; i++) {
 
-		Process *process = job->processes[0];	
+		Process *process = job->processes[i];	
+		int pipes[2];
+
+		pipe(pipes);
 
 		QuashCmds quashCmd;
 		if((quashCmd = isQuashCommand(process)) != NOT_QUASH_CMD) {
 			
 			executeQuashCommand(quashCmd, process);	
 			
+		// Else it's a binary that needs executed.
 		} else { 
 			bool binExists = false;
 			
@@ -95,14 +116,60 @@ void Quash::executeJob(const Job *job) {
 				
 				binExists = fileExists(execPath);
 			}
-			// if we need to look though PATH
+			// else we need to look though $PATH
 			else {
-				// if the binary exists, it will be set to process->argv[0];
+				// if the binary exists, it's path will be set to process->argv[0];
 				binExists = findPath(process->argv[0]);	
 			}	
 			
+			////////////////////////////////////////////////////////////
+			/////////// FORK AND EXEC //////////////////////////////////
+			////////////////////////////////////////////////////////////
 			if(binExists) {
-				executeProcess(process, job->runInBackground);
+				
+				// Orginal had this abstracted to a function call, but inlining it 
+				// makes piping a bit easier
+				pid_t pid = fork();
+				switch(pid) {
+					case FAILURE:
+						cerr << "Problem forking\n";
+						break;
+					case CHILD:
+					{
+						redirectFiles(process->inputFile, process->outputFile);
+						
+						// if this is the first process but not the last
+						if(i == 0 && i < numProcesses - 1) {
+							dup2(pipes[1], STDOUT_FILENO);
+						} 
+						// else if it's not the first AND not the last process...
+						else if (i != numProcesses - 1) {
+							dup2(prevPipe[0], STDIN_FILENO);
+							dup2(pipes[1], STDOUT_FILENO);
+						}
+						// else if this is the last process but not the first 
+						else if(i != 0 && i == numProcesses - 1) {
+							dup2(prevPipe[0], STDIN_FILENO);	
+						}
+						
+						close(pipes[0]);
+						close(pipes[1]);
+						
+						if(job->runInBackground) {
+							// Put this process in it's own group
+							setpgid(0, 0);	
+						}
+						
+						// Exec dat mofo
+						if(execve(process->argv[0], process->argv, mEnv) == FAILURE) {
+							cerr << "PROBLEM EXECUTING: " << process->argv[0] << endl;
+							exit(0);	
+						}
+					}
+					default: // Parent
+						process->pid = pid;
+				}
+
 			} else {
 				cerr << "Quash: " << process->argv[0] << ": command not found...\n";
 			}
@@ -110,14 +177,21 @@ void Quash::executeJob(const Job *job) {
 			// If this is the last process...
 			if(i == numProcesses - 1) {
 				if(job->runInBackground) {
-					printf("[%i] %i running in background", job->jobID.jobid, process->pid);
+					printf("[%i] %i running in background\n", job->jobID.jobid, process->pid);
 					backGroundJobs[process->pid] = job->jobID;	
 				} else {
 					wait(NULL);	
 				}
 			}
 		}
-	}
+		
+		prevPipe[1] = pipes[1];
+		prevPipe[0] = pipes[0];
+		
+		close(pipes[1]);
+	} /* END FOR */
+
+	
 }
 
 // Searches through PATH, looking for the process->argv[0]
@@ -357,6 +431,11 @@ void Quash::executeExit(const Process * const process) {
 }
 
 void Quash::executeJobs(const Process * const process) {
+
+	if(backGroundJobs.empty()) {
+		printf("There are currently no jobs executing in the background\n");	
+	}
+
 	for(auto jobIdPair : backGroundJobs) {
 		unsigned int jobid = jobIdPair.second.jobid;
 		string jobStr = jobIdPair.second.jobTextString;
@@ -369,17 +448,14 @@ void Quash::executeJobs(const Process * const process) {
 void Quash::signalHandler(int signal) {
 	pid_t pid;
 
-	cout << "\n\nIN SIGNAL HANDLER!\n\n";
-
 	while((pid = waitpid(-1, NULL, WNOHANG)) > 0) {
-		
 		// Check if the key exists. The signal may not be from the job-pid 
 		// identifier
 		if(backGroundJobs.find(pid) != backGroundJobs.end()) {
 			unsigned int jobid = backGroundJobs[pid].jobid;
 			string jobStr = backGroundJobs[pid].jobTextString;
 			
-			printf("[%i] %i finished %s\n", pid, jobid, jobStr.c_str());
+			printf("[%i] %i finished %s\n", jobid, pid, jobStr.c_str());
 			
 			backGroundJobs.erase(pid);
 		}
