@@ -157,8 +157,6 @@ class Quash {
 		);
 		
 		void redirectFiles(FILE *input, FILE *output);
-		
-		bool fileExists(const char *path);
 				
 		bool findPath(char *&execPath);		
 		

@@ -14,4 +14,6 @@ void printStrVector(vector<string> words, string message);
 
 char **argify(const vector<string> tokens, char **args); 
 
+bool fileExists(const char *path);
+
 #endif

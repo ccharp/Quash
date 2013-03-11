@@ -70,6 +70,16 @@ char **argify(const vector<string> tokens, char **args) {
 	return args;
 }
 
+bool fileExists(const char *path) {
+	FILE *f;
+	if(f = fopen(path, "r")) {
+		fclose(f);
+		return true;
+	}
+
+	return false;
+}
+
 
 #endif
 

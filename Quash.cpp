@@ -196,8 +196,10 @@ void Quash::executeJob(const Job *job) {
 		close(pipes[1]);
 	} /* END FOR */
 
-	close(prevPipe[0]);
-	close(prevPipe[1]);
+	//close(prevPipe[0]);
+	//close(prevPipe[1]);
+	dup2(STDIN_FILENO, STDIN_FILENO);	
+	dup2(STDOUT_FILENO, STDOUT_FILENO);
 }
 
 // Searches through PATH, looking for the process->argv[0]
@@ -213,7 +215,7 @@ bool Quash::findPath(char *&execPath) {
 			char *foundPath = new char[path.length() + 1];
 			strcpy(foundPath, path.c_str());
 			
-			delete []execPath;
+		delete []execPath;
 			execPath = foundPath;
 			
 			return foundPath;
@@ -221,16 +223,6 @@ bool Quash::findPath(char *&execPath) {
 	}
 
 	return NULL;
-}
-
-bool Quash::fileExists(const char *path) {
-	FILE *f;
-	if(f = fopen(path, "r")) {
-		fclose(f);
-		return true;
-	}
-
-	return false;
 }
 
 void Quash::executeQuashCommand(
@@ -385,8 +377,13 @@ Job *Quash::parseJob(const string input) {
 }
 
 void Quash::printPrompt() {
+	
+	// Sleep for 10 milliseconds to prevent a child process's output
+	// from printing after the prompt.
+	usleep(10 * 1000);
+
 	char *cwd = get_current_dir_name(); 
-	cout << "[quash " << cwd << "]$ ";	
+	cout << "[quash " << cwd << "]\n$ ";	
 
 	delete []cwd;
 }
@@ -456,11 +453,12 @@ void Quash::signalHandler(int signal) {
 
 	if(signal == SIGINT) {
 		printf("\n");
+
 		if(currProcess) {
 			kill(currProcess, SIGTERM); 
 		} else { // Hack go get the reprint the prompt. static functions suck. 
 			char *cwd = get_current_dir_name(); 
-			cout << "[quash " << cwd << "]$ ";	
+			cout << "[quash " << cwd << "]\n$ ";	
 			cout.flush();
 
 			delete []cwd;
