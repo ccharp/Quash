@@ -1,5 +1,5 @@
 QUASH: main.o Quash.o Utilities.o
-	g++ -std=c++0x -g main.o Quash.o Utilities.o -o main 
+	g++ -std=c++0x -g main.o Quash.o Utilities.o -o Quash
 main.o: main.cpp
 	g++ -std=c++0x -c -g main.cpp
 Quash.o: Quash.h Quash.cpp Utilities.h

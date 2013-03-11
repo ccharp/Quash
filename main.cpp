@@ -1,4 +1,10 @@
 #include <iostream>
+#include <sstream>
+#include <string>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <signal.h>
 
 #include "Quash.h"
 
@@ -10,4 +16,47 @@ int main(int argc, char **argv, char **envp) {
 
 	return EXIT_SUCCESS;
 }
+
+/* ./binary < input > output 
+ *
+ * ls | grep foo | head > bar.txt &
+ *
+ * 
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

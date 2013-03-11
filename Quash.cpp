@@ -116,7 +116,7 @@ void Quash::executeJob(const Job *job) {
 				
 				binExists = fileExists(execPath);
 			}
-			// else we need to look though $PATH
+			// if we need to look though PATH
 			else {
 				// if the binary exists, it's path will be set to process->argv[0];
 				binExists = findPath(process->argv[0]);	
@@ -448,7 +448,10 @@ void Quash::executeJobs(const Process * const process) {
 void Quash::signalHandler(int signal) {
 	pid_t pid;
 
+	cout << "\n\nIN SIGNAL HANDLER!\n\n";
+
 	while((pid = waitpid(-1, NULL, WNOHANG)) > 0) {
+		
 		// Check if the key exists. The signal may not be from the job-pid 
 		// identifier
 		if(backGroundJobs.find(pid) != backGroundJobs.end()) {
