@@ -20,6 +20,7 @@ using namespace std;
 
 // Global to track background jobs
 map<pid_t, JobIdentifier> backGroundJobs;
+pid_t currProcess;
 
 Quash::Quash(char **&aEnv) {
 	mEnv = aEnv;
@@ -36,6 +37,8 @@ Quash::Quash(char **&aEnv) {
 		cerr << "Error in initSignals\n";
 		exit(0);
 	}
+
+	signal(SIGINT, signalHandler); 
 }
 
 void Quash::mainLoop() {
@@ -180,7 +183,9 @@ void Quash::executeJob(const Job *job) {
 					printf("[%i] %i running in background\n", job->jobID.jobid, process->pid);
 					backGroundJobs[process->pid] = job->jobID;	
 				} else {
+					currProcess = process->pid;
 					wait(NULL);	
+					currProcess = 0;
 				}
 			}
 		}
@@ -191,7 +196,8 @@ void Quash::executeJob(const Job *job) {
 		close(pipes[1]);
 	} /* END FOR */
 
-	
+	close(prevPipe[0]);
+	close(prevPipe[1]);
 }
 
 // Searches through PATH, looking for the process->argv[0]
@@ -380,7 +386,7 @@ Job *Quash::parseJob(const string input) {
 
 void Quash::printPrompt() {
 	char *cwd = get_current_dir_name(); 
-	cout << "[quash " << cwd << "]\n$ ";	
+	cout << "[quash " << cwd << "]$ ";	
 
 	delete []cwd;
 }
@@ -448,6 +454,19 @@ void Quash::executeJobs(const Process * const process) {
 void Quash::signalHandler(int signal) {
 	pid_t pid;
 
+	if(signal == SIGINT) {
+		printf("\n");
+		if(currProcess) {
+			kill(currProcess, SIGTERM); 
+		} else { // Hack go get the reprint the prompt. static functions suck. 
+			char *cwd = get_current_dir_name(); 
+			cout << "[quash " << cwd << "]$ ";	
+			cout.flush();
+
+			delete []cwd;
+		}
+	}
+
 	while((pid = waitpid(-1, NULL, WNOHANG)) > 0) {
 		
 		// Check if the key exists. The signal may not be from the job-pid 
@@ -462,11 +481,5 @@ void Quash::signalHandler(int signal) {
 		}
 	}
 }
-
-
-
-
-
-
 
 #endif
