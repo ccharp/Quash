@@ -139,8 +139,6 @@ void Quash::executeJob(const Job *job) {
 						break;
 					case CHILD:
 					{
-						redirectFiles(process->inputFile, process->outputFile);
-						
 						// if this is the first process but not the last
 						if(i == 0 && i < numProcesses - 1) {
 							dup2(pipes[1], STDOUT_FILENO);
@@ -157,6 +155,8 @@ void Quash::executeJob(const Job *job) {
 						
 						close(pipes[0]);
 						close(pipes[1]);
+
+						redirectFiles(process->inputFile, process->outputFile);
 						
 						if(job->runInBackground) {
 							// Put this process in it's own group
@@ -443,7 +443,7 @@ void Quash::executeJobs(const Process * const process) {
 		unsigned int jobid = jobIdPair.second.jobid;
 		string jobStr = jobIdPair.second.jobTextString;
 		
-		printf("[%i] %i %s\n", jobid, jobIdPair.second.pid, jobStr.c_str());
+		printf("[%i] %i %s\n", jobid, jobIdPair.first, jobStr.c_str());
 	}
 }
 
