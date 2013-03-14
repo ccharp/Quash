@@ -25,7 +25,7 @@ pid_t currProcess;
 Quash::Quash(char **&aEnv) {
 	mEnv = aEnv;
 	mJobid = 0;
-	currDir = (string)get_current_dir_name();
+	currDir = (string)getwd(NULL);
 
 	// Initialize ignal handling
 	struct sigaction action; 
@@ -382,7 +382,7 @@ void Quash::printPrompt() {
 	// from printing after the prompt.
 	usleep(10 * 1000);
 
-	char *cwd = get_current_dir_name(); 
+	char *cwd = getwd(NULL);
 	cout << "[quash " << cwd << "]\n$ ";	
 
 	delete []cwd;
@@ -457,7 +457,7 @@ void Quash::signalHandler(int signal) {
 		if(currProcess) {
 			kill(currProcess, SIGTERM); 
 		} else { // Hack go get the reprint the prompt. static functions suck. 
-			char *cwd = get_current_dir_name(); 
+			char *cwd = getwd(NULL);
 			cout << "[quash " << cwd << "]\n$ ";	
 			cout.flush();
 
