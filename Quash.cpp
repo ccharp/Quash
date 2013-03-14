@@ -21,14 +21,15 @@ using namespace std;
 // Global to track background jobs
 map<pid_t, JobIdentifier> backGroundJobs;
 pid_t currProcess;
+char *devnull;
 
 Quash::Quash(char **&aEnv) {
 	mEnv = aEnv;
 	mJobid = 0;
-	currDir = (string)get_current_dir_name();
+	currDir = (string)getwd(devnull);
 
 	// Initialize ignal handling
-	struct sigaction action; 
+	struct sigaction action;
 
 	memset(&action, 0, sizeof(action));
 	action.sa_handler = signalHandler;
@@ -38,7 +39,7 @@ Quash::Quash(char **&aEnv) {
 		exit(0);
 	}
 
-	signal(SIGINT, signalHandler); 
+	signal(SIGINT, signalHandler);
 }
 
 void Quash::mainLoop() {
@@ -49,7 +50,7 @@ void Quash::mainLoop() {
 	do{
 		if(!cin.good()) {
 			cin.clear();
-			continue;	
+			continue;
 		}
 		// If commands were passed in
 	   	// execute them then terminate, and do not print prompt
@@ -57,17 +58,17 @@ void Quash::mainLoop() {
 	        printPrompt();
 			promptPrinted = true;
 	    }
-			
-		if(getline(cin, input) && cin.good()) { 
+
+		if(getline(cin, input) && cin.good()) {
 	   		Job *job;
-			
+
 			promptPrinted = false;
 			if(input.empty() || (job = parseJob(input)) == NULL) {
-				continue;	
+				continue;
 			}
-			
+
 			executeJob(job);
-	    } 
+	    }
 		else if (hasInfile) {
 	    	break;
 	  	}
@@ -93,44 +94,44 @@ void Quash::executeJob(const Job *job) {
 	unsigned int numProcesses = job->processes.size();
 	for(unsigned int i = 0; i < numProcesses; i++) {
 
-		Process *process = job->processes[i];	
+		Process *process = job->processes[i];
 		int pipes[2];
 
 		pipe(pipes);
 
 		QuashCmds quashCmd;
 		if((quashCmd = isQuashCommand(process)) != NOT_QUASH_CMD) {
-			
-			executeQuashCommand(quashCmd, process);	
-			
+
+			executeQuashCommand(quashCmd, process);
+
 		// Else it's a binary that needs executed.
-		} else { 
+		} else {
 			bool binExists = false;
-			
+
 			// if it's an absolute path
 			if('/' == process->argv[0][0]) {
-				binExists = fileExists(process->argv[0]);		
-			} 
-			// if it's a local/relative path 
+				binExists = fileExists(process->argv[0]);
+			}
+			// if it's a local/relative path
 			else if(strncmp("./", process->argv[0], 2) == 0) {
 				// Trim the "./" off of the process->argv[0]
 				char *execPath = process->argv[0];
 				memmove(execPath, execPath + 2, strlen(execPath) - 1);
-				
+
 				binExists = fileExists(execPath);
 			}
 			// if we need to look though PATH
 			else {
 				// if the binary exists, it's path will be set to process->argv[0];
-				binExists = findPath(process->argv[0]);	
-			}	
-			
+				binExists = findPath(process->argv[0]);
+			}
+
 			////////////////////////////////////////////////////////////
 			/////////// FORK AND EXEC //////////////////////////////////
 			////////////////////////////////////////////////////////////
 			if(binExists) {
-				
-				// Orginal had this abstracted to a function call, but inlining it 
+
+				// Orginal had this abstracted to a function call, but inlining it
 				// makes piping a bit easier
 				pid_t pid = fork();
 				switch(pid) {
@@ -142,31 +143,31 @@ void Quash::executeJob(const Job *job) {
 						// if this is the first process but not the last
 						if(i == 0 && i < numProcesses - 1) {
 							dup2(pipes[1], STDOUT_FILENO);
-						} 
+						}
 						// else if it's not the first AND not the last process...
 						else if (i != numProcesses - 1) {
 							dup2(prevPipe[0], STDIN_FILENO);
 							dup2(pipes[1], STDOUT_FILENO);
 						}
-						// else if this is the last process but not the first 
+						// else if this is the last process but not the first
 						else if(i != 0 && i == numProcesses - 1) {
-							dup2(prevPipe[0], STDIN_FILENO);	
+							dup2(prevPipe[0], STDIN_FILENO);
 						}
-						
+
 						close(pipes[0]);
 						close(pipes[1]);
 
 						redirectFiles(process->inputFile, process->outputFile);
-						
+
 						if(job->runInBackground) {
 							// Put this process in it's own group
-							setpgid(0, 0);	
+							setpgid(0, 0);
 						}
-						
+
 						// Exec dat mofo
 						if(execve(process->argv[0], process->argv, mEnv) == FAILURE) {
 							cerr << "PROBLEM EXECUTING: " << process->argv[0] << endl;
-							exit(0);	
+							exit(0);
 						}
 					}
 					default: // Parent
@@ -176,29 +177,29 @@ void Quash::executeJob(const Job *job) {
 			} else {
 				cerr << "Quash: " << process->argv[0] << ": command not found...\n";
 			}
-			
+
 			// If this is the last process...
 			if(i == numProcesses - 1) {
 				if(job->runInBackground) {
 					printf("[%i] %i running in background\n", job->jobID.jobid, process->pid);
-					backGroundJobs[process->pid] = job->jobID;	
+					backGroundJobs[process->pid] = job->jobID;
 				} else {
 					currProcess = process->pid;
-					wait(NULL);	
+					wait(NULL);
 					currProcess = 0;
 				}
 			}
 		}
-		
+
 		prevPipe[1] = pipes[1];
 		prevPipe[0] = pipes[0];
-		
+
 		close(pipes[1]);
 	} /* END FOR */
 
 	//close(prevPipe[0]);
 	//close(prevPipe[1]);
-	dup2(STDIN_FILENO, STDIN_FILENO);	
+	dup2(STDIN_FILENO, STDIN_FILENO);
 	dup2(STDOUT_FILENO, STDOUT_FILENO);
 }
 
@@ -206,18 +207,18 @@ void Quash::executeJob(const Job *job) {
 bool Quash::findPath(char *&execPath) {
 	// Ex: PATH=/usr/bin:/some/other
 	string PATH = string(getenv("PATH"));
-	vector<string> pathToks = tokenize(PATH.substr(5), ':'); 
+	vector<string> pathToks = tokenize(PATH.substr(5), ':');
 
 	for(string path : pathToks) {
-		path += "/" + string(execPath); 
-		
+		path += "/" + string(execPath);
+
 		if(fileExists(path.c_str())) {
 			char *foundPath = new char[path.length() + 1];
 			strcpy(foundPath, path.c_str());
-			
+
 		delete []execPath;
 			execPath = foundPath;
-			
+
 			return foundPath;
 		}
 	}
@@ -226,9 +227,9 @@ bool Quash::findPath(char *&execPath) {
 }
 
 void Quash::executeQuashCommand(
-	QuashCmds quashCmd, 
+	QuashCmds quashCmd,
 	const Process * const process
-	) 
+	)
 	{
 	switch(quashCmd) {
 		case CD:
@@ -239,10 +240,10 @@ void Quash::executeQuashCommand(
 			break;
 		case EXIT:
 		case QUIT:
-			executeExit(process); 
+			executeExit(process);
 			break;
 		case JOBS:
-			executeJobs(process); 
+			executeJobs(process);
 			break;
 		default:
 			cerr << "Problem in executeQuashCommand\n";
@@ -258,15 +259,15 @@ int Quash::executeProcess(Process * const process, bool runInBackground) {
 			break;
 		case CHILD:
 			redirectFiles(process->inputFile, process->outputFile);
-			
+
 			if(runInBackground) {
 				// Put it in it's own group
-				setpgid(0, 0);	
+				setpgid(0, 0);
 			}
-			
+
 			if(execve(process->argv[0], process->argv, mEnv) == FAILURE) {
 				cerr << "PROBLEM EXECUTING: " << process->argv[0] << endl;
-				exit(0);	
+				exit(0);
 			}
 		default: // Parent
 			process->pid = pid;
@@ -276,9 +277,9 @@ int Quash::executeProcess(Process * const process, bool runInBackground) {
 }
 
 void Quash::redirectFiles(FILE *input, FILE *output) {
-	
+
 	if(fileno(input) != STDIN_FILENO) {
-		dup2(fileno(input), STDIN_FILENO);	
+		dup2(fileno(input), STDIN_FILENO);
 	}
 
 	if(fileno(output) != STDOUT_FILENO) {
@@ -294,47 +295,47 @@ Process *Quash::parseProcess(const string input) {
 
 	unsigned int len = tokProcess.size();
 	for(int i = 0; i < len; i++) {
-		
+
 		// Check for redirection
 		if(tokProcess[i] == "<") {
-			
+
 			if(i + 1 >= len) {
 				cerr << "Bad syntax: '<'\n";
 				break;
 			}
-			
+
 			const char *filename = tokProcess[++i].c_str();
-			process->inputFile = fopen(filename, "r"); 
-			
+			process->inputFile = fopen(filename, "r");
+
 			if(process->outputFile == NULL) {
-				cerr << "Couldn't open file: " << filename << endl;	
+				cerr << "Couldn't open file: " << filename << endl;
 				return NULL;
 			}
-		} 
+		}
 		else if(tokProcess[i] == ">") {
-		
+
 			if(i + 1 >= len) {
 				cerr << "Bad syntax: '>'\n";
 				break;
 			}
-			
+
 			const char *filename = tokProcess[++i].c_str();
-			process->outputFile = fopen(filename, "w"); 
-			
+			process->outputFile = fopen(filename, "w");
+
 			if(process->outputFile == NULL) {
-				cerr << "Couldn't open file: " << filename << endl;	
+				cerr << "Couldn't open file: " << filename << endl;
 				return NULL;
 			}
-		} 
+		}
 		// No redirection
 		else {
 			tokArgs.push_back(tokProcess[i]);
 		}
 	}
-	
-	// Returns pointer to C style argument array made from the 
+
+	// Returns pointer to C style argument array made from the
 	// argument tokens
-	process->argv = argify(tokArgs, process->argv); 
+	process->argv = argify(tokArgs, process->argv);
 
 	return process;
 }
@@ -345,7 +346,7 @@ Job *Quash::parseJob(const string input) {
 	// Create job and assign unique job ID.
 	Job *job = new Job(mJobid++);
 	job->jobID.jobTextString = input;
-	
+
 	// Tokenize input into individual process
 	vector<string> tokProcesses = tokenize(input, '|');
 
@@ -353,37 +354,37 @@ Job *Quash::parseJob(const string input) {
 	int pos;
 	string lastStr = tokProcesses[tokProcesses.size() - 1];
 	if((pos = lastStr.find("&")) != string::npos) {
-		
+
 		// Found a '&'
-		job->runInBackground = true; 
+		job->runInBackground = true;
 		tokProcesses[tokProcesses.size() - 1].erase(pos);
 	}
-		
+
 	// Parse each process and add it to the job
 	for(string strProcess : tokProcesses) {
 		Process *process;
 		if((process = parseProcess(strProcess)) == NULL) {
-			return NULL;	
+			return NULL;
 		}
 
-		job->processes.push_back(process); 	
+		job->processes.push_back(process);
 	}
 
 #if DEBUG
 	job->print();
 #endif
-		
+
 	return job;
 }
 
 void Quash::printPrompt() {
-	
+
 	// Sleep for 10 milliseconds to prevent a child process's output
 	// from printing after the prompt.
 	usleep(10 * 1000);
 
-	char *cwd = get_current_dir_name(); 
-	cout << "[quash " << cwd << "]\n$ ";	
+	char *cwd = getwd(devnull);
+	cout << "[quash " << cwd << "]\n$ ";
 
 	delete []cwd;
 }
@@ -406,8 +407,8 @@ QuashCmds Quash::isQuashCommand(const Process * const process) {
 	else if(strcmp("jobs", process->argv[0]) == 0) {
 		retVal = JOBS;
 	}
-	
-	return retVal;	
+
+	return retVal;
 }
 
 void Quash::executeCd(const Process * const process) {
@@ -425,7 +426,7 @@ void Quash::executeCd(const Process * const process) {
 
 void Quash::executeSet(const Process *  const process) {
 	vector<string> strToks = tokenize(string(process->argv[1]), '=');
-		
+
 	setenv(strToks[0].c_str(), strToks[1].c_str(), 1);
 }
 
@@ -436,18 +437,18 @@ void Quash::executeExit(const Process * const process) {
 void Quash::executeJobs(const Process * const process) {
 
 	if(backGroundJobs.empty()) {
-		printf("There are currently no jobs executing in the background\n");	
+		printf("There are currently no jobs executing in the background\n");
 	}
 
 	for(auto jobIdPair : backGroundJobs) {
 		unsigned int jobid = jobIdPair.second.jobid;
 		string jobStr = jobIdPair.second.jobTextString;
-		
+
 		printf("[%i] %i %s\n", jobid, jobIdPair.first, jobStr.c_str());
 	}
 }
 
-/*static*/ 
+/*static*/
 void Quash::signalHandler(int signal) {
 	pid_t pid;
 
@@ -455,10 +456,10 @@ void Quash::signalHandler(int signal) {
 		printf("\n");
 
 		if(currProcess) {
-			kill(currProcess, SIGTERM); 
-		} else { // Hack go get the reprint the prompt. static functions suck. 
-			char *cwd = get_current_dir_name(); 
-			cout << "[quash " << cwd << "]\n$ ";	
+			kill(currProcess, SIGTERM);
+		} else { // Hack go get the reprint the prompt. static functions suck.
+			char *cwd = getwd(devnull);
+			cout << "[quash " << cwd << "]\n$ ";
 			cout.flush();
 
 			delete []cwd;
@@ -466,15 +467,15 @@ void Quash::signalHandler(int signal) {
 	}
 
 	while((pid = waitpid(-1, NULL, WNOHANG)) > 0) {
-		
-		// Check if the key exists. The signal may not be from the job-pid 
+
+		// Check if the key exists. The signal may not be from the job-pid
 		// identifier
 		if(backGroundJobs.find(pid) != backGroundJobs.end()) {
 			unsigned int jobid = backGroundJobs[pid].jobid;
 			string jobStr = backGroundJobs[pid].jobTextString;
-			
+
 			printf("[%i] %i finished %s\n", jobid, pid, jobStr.c_str());
-			
+
 			backGroundJobs.erase(pid);
 		}
 	}
