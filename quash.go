@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
 )
 
 // Globals
@@ -11,7 +13,6 @@ var builtins = map[string]builtinFunction{
 }
 
 var jobs []job
-
 
 // Types
 
@@ -42,7 +43,6 @@ type command interface {
 	Run() int
 }
 
-
 // Methods
 
 func (p process) Run() int {
@@ -55,11 +55,17 @@ func (bi builtinCommand) Run() int {
 	return 0
 }
 
-
 func main() {
-	fmt.Println("hello world")
-}
+	signalChannel := make(chan os.Signal, 10)
+	signal.Notify(signalChannel)
 
+	fmt.Println("quash")
+	for {
+		s := <-signalChannel
+		fmt.Println("got signal", s)
+	}
+
+}
 
 func parse(input string) job {
 	return job{}
@@ -71,5 +77,5 @@ func helpBuiltin() int {
 }
 
 func init() {
-	jobs = make([]job,0)
+	jobs = make([]job, 0)
 }
