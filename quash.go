@@ -87,7 +87,9 @@ func main() {
 		case input := <-stdinChannel:
 			job, err := parse(input)
 			if err == nil {
-				execute(job)
+				if err := execute(job); err != nil {
+					fmt.Fprintln(os.Stderr, "Error executing:", err)
+				}
 			} else {
 				fmt.Fprintln(os.Stderr, "Error parsing:", err)
 			}
@@ -105,7 +107,7 @@ func parse(input string) (job, error) {
 }
 
 func execute(j job) error {
-	return fmt.Errorf("Error in execute")
+	return fmt.Errorf("unimplemented")
 }
 
 func helpBuiltin() int {
