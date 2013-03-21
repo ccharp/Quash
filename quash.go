@@ -58,13 +58,16 @@ func (bi builtinCommand) Run() int {
 
 func getStdin(c chan string) {
 	reader := bufio.NewReader(os.Stdin)
-	input, err := reader.ReadString('\n')
 
-	if err == nil {
-		c <- input
-	} else {
-		fmt.Fprintln(os.Stderr, "Error reading from stdin:", err)
-		os.Exit(0)
+	for {
+		input, err := reader.ReadString('\n')
+
+		if err == nil {
+			c <- input
+		} else {
+			fmt.Fprintln(os.Stderr, "Error reading from stdin:", err)
+			os.Exit(0)
+		}
 	}
 }
 
@@ -83,7 +86,7 @@ func main() {
 			handleSystemSignal(signal)
 		case input := <-stdinChannel:
 			job, err := parse(input)
-			if err != nil {
+			if err == nil {
 				execute(job)
 			} else {
 				fmt.Fprintln(os.Stderr, "Error parsing:", err)
