@@ -60,7 +60,7 @@ func getStdin(c chan string) {
 	reader := bufio.NewReader(os.Stdin)
 	input, err := reader.ReadString('\n')
 
-	if err != nil {
+	if err == nil {
 		c <- input
 	} else {
 		fmt.Fprintln(os.Stderr, "Error reading from stdin:", err)
