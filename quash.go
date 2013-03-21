@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/signal"
@@ -55,20 +56,53 @@ func (bi builtinCommand) Run() int {
 	return 0
 }
 
-func main() {
-	signalChannel := make(chan os.Signal, 10)
-	signal.Notify(signalChannel)
+func getStdin(c chan string) {
+	reader := bufio.NewReader(os.Stdin)
+	input, err := reader.ReadString('\n')
 
-	fmt.Println("quash")
+	if err != nil {
+		c <- input
+	} else {
+		fmt.Fprintln(os.Stderr, "Error reading from stdin:", err)
+		os.Exit(0)
+	}
+}
+
+func main() {
+	systemChannel := make(chan os.Signal, 10)
+	stdinChannel := make(chan string)
+	signal.Notify(systemChannel)
+
+	go getStdin(stdinChannel)
+
 	for {
-		s := <-signalChannel
-		fmt.Println("got signal", s)
+		fmt.Println("[Quash: ] $")
+
+		select {
+		case signal := <-systemChannel:
+			handleSystemSignal(signal)
+		case input := <-stdinChannel:
+			job, err := parse(input)
+			if err != nil {
+				execute(job)
+			} else {
+				fmt.Fprintln(os.Stderr, "Error parsing:", err)
+			}
+		}
 	}
 
 }
 
-func parse(input string) job {
-	return job{}
+func handleSystemSignal(s os.Signal) {
+	fmt.Println("Handled signal:", s)
+}
+
+func parse(input string) (job, error) {
+	return job{}, fmt.Errorf("error in parse")
+}
+
+func execute(j job) error {
+	return fmt.Errorf("Error in execute")
 }
 
 func helpBuiltin() int {
